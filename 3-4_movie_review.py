@@ -3,6 +3,9 @@
 '''
 
 from keras.datasets import imdb
+from keras import models
+from keras import layers
+
 import numpy as np
 
 def confirm_data(train_data, train_labels):
@@ -28,6 +31,15 @@ def vectorize_sequences(sequences, dimension=10000):
         results[i, sequence] = 1.
     return results
 
+def define_model():
+    model = models.Sequential()
+    model.add(layers.Dense(16, activation='relu', input_shape=(10000,)))
+    model.add(layers.Dense(16, activation='relu'))
+    model.add(layers.Dense(1, activation='sigmoid'))
+
+    return model
+
+
 # =============================================================================
 # main関数
 # ここから色々試す
@@ -43,7 +55,7 @@ def main():
     x_test = vectorize_sequences(test_data)
     y_test = np.asarray(test_labels).astype('float32')
 
-
+    model = define_model()
 
 
 if __name__ == '__main__':
