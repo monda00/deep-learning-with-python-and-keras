@@ -3,6 +3,7 @@
 '''
 
 from keras.datasets import imdb
+import numpy as np
 
 def confirm_data(train_data, train_labels):
     print(train_data[0])
@@ -20,12 +21,29 @@ def num_to_words(train_data, train_labels):
     # デコードした内容を表示
     print(decoded_rebiew)
 
+def vectorize_sequences(sequences, dimension=10000):
+    results = np.zeros((len(sequences), dimension))
 
+    for i, sequence in enumerate(sequences):
+        results[i, sequence] = 1.
+    return results
+
+# =============================================================================
+# main関数
+# ここから色々試す
+# =============================================================================
 def main():
     (train_data, train_labels), (test_data, test_labels) = \
         imdb.load_data(num_words=10000)
 
-    num_to_words(train_data, train_labels)
+    # 訓練データのベクトル化
+    x_train = vectorize_sequences(train_data)
+    y_train = np.asarray(train_labels).astype('float32')
+    # テストデータのベクトル化
+    x_test = vectorize_sequences(test_data)
+    y_test = np.asarray(test_labels).astype('float32')
+
+
 
 
 if __name__ == '__main__':
