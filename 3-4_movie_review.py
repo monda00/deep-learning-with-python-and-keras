@@ -67,8 +67,8 @@ def show_acc_history(history):
 
 def define_model():
     model = models.Sequential()
-    model.add(layers.Dense(32, activation='relu', input_shape=(10000,)))
-    model.add(layers.Dense(32, activation='relu'))
+    model.add(layers.Dense(64, activation='relu', input_shape=(10000,)))
+    model.add(layers.Dense(64, activation='relu'))
     # model.add(layers.Dense(16, activation='relu'))
     model.add(layers.Dense(1, activation='sigmoid'))
 
