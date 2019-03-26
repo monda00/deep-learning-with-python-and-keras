@@ -5,6 +5,9 @@
 from keras.datasets import imdb
 from keras import models
 from keras import layers
+from keras import optimizers
+from keras import losses
+from keras import metrics
 
 import numpy as np
 
@@ -37,6 +40,13 @@ def define_model():
     model.add(layers.Dense(16, activation='relu'))
     model.add(layers.Dense(1, activation='sigmoid'))
 
+    # model.compile(optimizer='rmsprop',
+    #               loss='binary_crossentropy',
+    #               metrics=['accuracy'])
+    model.compile(optimizer=optimizers.RMSprop(lr=0.001),
+                  loss=losses.binary_crossentropy,
+                  metrics=[metrics.binary_accuracy])
+
     return model
 
 
@@ -55,7 +65,20 @@ def main():
     x_test = vectorize_sequences(test_data)
     y_test = np.asarray(test_labels).astype('float32')
 
+    # 検証データの設定
+    x_val = x_train[:10000]
+    partial_x_train = x_train[10000:]
+    y_val = y_train[:10000]
+    partial_y_train = y_train[10000:]
+
     model = define_model()
+
+    history = model.fit(partial_x_train, partial_y_train,
+                        epochs=20, batch_size=512,
+                        validation_data=(x_val, y_val))
+
+    history_dict = history.history
+    print(history_dict.keys())
 
 
 if __name__ == '__main__':
