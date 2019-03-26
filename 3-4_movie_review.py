@@ -52,8 +52,8 @@ def show_loss_history(history):
 
 def show_acc_history(history):
     history_dict = history.history
-    acc = history_dict['binary_accuracy']
-    val_acc = history_dict['val_binary_accuracy']
+    acc = history_dict['acc']
+    val_acc = history_dict['val_acc']
 
     epochs = range(1, len(acc) + 1)
 
@@ -67,17 +67,16 @@ def show_acc_history(history):
 
 def define_model():
     model = models.Sequential()
-    model.add(layers.Dense(64, activation='relu', input_shape=(10000,)))
-    model.add(layers.Dense(64, activation='relu'))
-    # model.add(layers.Dense(16, activation='relu'))
+    model.add(layers.Dense(16, activation='relu', input_shape=(10000,)))
+    model.add(layers.Dense(16, activation='relu'))
     model.add(layers.Dense(1, activation='sigmoid'))
 
-    # model.compile(optimizer='rmsprop',
-    #               loss='binary_crossentropy',
-    #               metrics=['accuracy'])
-    model.compile(optimizer=optimizers.RMSprop(lr=0.001),
-                  loss=losses.binary_crossentropy,
-                  metrics=[metrics.binary_accuracy])
+    model.compile(optimizer='rmsprop',
+                  loss='mse',
+                  metrics=['accuracy'])
+    # model.compile(optimizer=optimizers.RMSprop(lr=0.001),
+    #               loss=losses.binary_crossentropy,
+    #               metrics=[metrics.binary_accuracy])
 
     return model
 
