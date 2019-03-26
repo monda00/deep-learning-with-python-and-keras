@@ -10,6 +10,7 @@ from keras import losses
 from keras import metrics
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 def confirm_data(train_data, train_labels):
     print(train_data[0])
@@ -33,6 +34,38 @@ def vectorize_sequences(sequences, dimension=10000):
     for i, sequence in enumerate(sequences):
         results[i, sequence] = 1.
     return results
+
+def show_loss_history(history):
+    history_dict = history.history
+    loss_values = history_dict['loss']
+    val_loss_values = history_dict['val_loss']
+
+    epochs = range(1, len(loss_values) + 1)
+
+    plt.plot(epochs, loss_values, 'bo', label='Training loss')
+    plt.plot(epochs, val_loss_values, 'b', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.xlabel('Epochs')
+    plt.ylabel('Loss')
+    plt.legend()
+    plt.show()
+
+def show_acc_history(history):
+    history_dict = history.history
+    acc = history_dict['binary_accuracy']
+    val_acc = history_dict['val_binary_accuracy']
+
+    epochs = range(1, len(acc) + 1)
+    print(epochs)
+
+    plt.plot(epochs, acc, 'bo', label='Training acc')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.xlabel('Epochs')
+    plt.ylabel('Accuracy')
+    plt.legend()
+    plt.show()
+
 
 def define_model():
     model = models.Sequential()
@@ -77,8 +110,8 @@ def main():
                         epochs=20, batch_size=512,
                         validation_data=(x_val, y_val))
 
-    history_dict = history.history
-    print(history_dict.keys())
+    show_loss_history(history)
+    show_acc_history(history)
 
 
 if __name__ == '__main__':
