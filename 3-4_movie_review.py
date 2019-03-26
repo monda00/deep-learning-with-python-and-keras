@@ -56,7 +56,6 @@ def show_acc_history(history):
     val_acc = history_dict['val_binary_accuracy']
 
     epochs = range(1, len(acc) + 1)
-    print(epochs)
 
     plt.plot(epochs, acc, 'bo', label='Training acc')
     plt.plot(epochs, val_acc, 'b', label='Validation acc')
@@ -65,7 +64,6 @@ def show_acc_history(history):
     plt.ylabel('Accuracy')
     plt.legend()
     plt.show()
-
 
 def define_model():
     model = models.Sequential()
@@ -107,11 +105,13 @@ def main():
     model = define_model()
 
     history = model.fit(partial_x_train, partial_y_train,
-                        epochs=20, batch_size=512,
+                        epochs=4, batch_size=512,
                         validation_data=(x_val, y_val))
 
-    show_loss_history(history)
-    show_acc_history(history)
+    # show_loss_history(history)
+    # show_acc_history(history)
+    results = model.evaluate(x_test, y_test)
+    print(model.predict(x_test))
 
 
 if __name__ == '__main__':
