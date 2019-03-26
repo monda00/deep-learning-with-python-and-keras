@@ -68,7 +68,7 @@ def show_acc_history(history):
 def define_model():
     model = models.Sequential()
     model.add(layers.Dense(16, activation='relu', input_shape=(10000,)))
-    model.add(layers.Dense(16, activation='relu'))
+    # model.add(layers.Dense(16, activation='relu'))
     model.add(layers.Dense(1, activation='sigmoid'))
 
     # model.compile(optimizer='rmsprop',
@@ -105,12 +105,13 @@ def main():
     model = define_model()
 
     history = model.fit(partial_x_train, partial_y_train,
-                        epochs=4, batch_size=512,
+                        epochs=20, batch_size=512,
                         validation_data=(x_val, y_val))
 
-    # show_loss_history(history)
-    # show_acc_history(history)
+    show_loss_history(history)
+    show_acc_history(history)
     results = model.evaluate(x_test, y_test)
+    print(results)
     print(model.predict(x_test))
 
 
