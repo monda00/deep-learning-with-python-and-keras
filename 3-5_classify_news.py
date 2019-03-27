@@ -98,10 +98,12 @@ if __name__ == '__main__':
     model = define_model()
 
     history = model.fit(partial_x_train, partial_y_train,
-                        epochs=20, batch_size=512,
+                        epochs=8, batch_size=512,
                         validation_data=(x_val, y_val))
 
     show_loss_history(history)
     show_acc_history(history)
+    results = model.evaluate(x_test, one_hot_test_labels)
+    print(results)
 
 
