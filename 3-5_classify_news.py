@@ -3,6 +3,8 @@
 '''
 
 from keras.datasets import reuters
+from keras import models
+from keras import layers
 
 import numpy as np
 
@@ -32,6 +34,18 @@ def to_one_hot(labels, dimension=46):
         results[i, label] = 1.
     return results
 
+def define_model():
+    model = models.Sequential()
+    model.add(layers.Dense(64, activation='relu', input_shape=(10000,)))
+    model.add(layers.Dense(64, activation='relu'))
+    model.add(layers.Dense(46, activation='softmax'))
+
+    model.compile(optimizer='rmsprop',
+                  loss='categorical_crossentropy',
+                  metrics=['accuracy'])
+
+    return model
+
 
 if __name__ == '__main__':
     # データの読み込み
@@ -44,5 +58,7 @@ if __name__ == '__main__':
     # ラベルのベクトル化
     one_hot_train_labels = to_one_hot(train_labels)
     one_hot_test_labels = to_one_hot(test_labels)
+
+    model = define_model()
 
 
