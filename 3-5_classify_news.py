@@ -105,5 +105,6 @@ if __name__ == '__main__':
     show_acc_history(history)
     results = model.evaluate(x_test, one_hot_test_labels)
     print(results)
+    print(model.predict(x_test))
 
 
