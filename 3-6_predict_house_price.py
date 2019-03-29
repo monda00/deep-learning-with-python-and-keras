@@ -6,6 +6,8 @@ from keras.datasets import boston_housing
 from keras import models
 from keras import layers
 
+import numpy as np
+
 def standardize_data(train_data, test_data):
     mean = train_data.mean(axis=0)
     train_data -= mean
@@ -26,6 +28,43 @@ def build_model(train_data):
     model.compile(optimizer='rmsprop', loss='mse', metrics=['mae'])
     return model
 
+def k_fold_cross_validation(train_data, trian_targets, k=4):
+    num_val_samples = len(train_data) // k
+    num_epochs = 100
+    all_scores = []
+
+    for i in range(k):
+        print('processing fold #', i)
+
+        # 検証データの準備：フォールドiのデータ
+        val_data = \
+            train_data[i * num_val_samples: (i + 1) * num_val_samples]
+        val_targets = \
+            train_targets[i * num_val_samples: (i + 1) * num_val_samples]
+
+        # 訓練データの準備：フォールドiのデータ
+        partial_train_data = np.concatenate(
+            [train_data[:i * num_val_samples],
+             train_data[(i + 1) * num_val_samples:]],
+            axis=0)
+        partial_train_targets = np.concatenate(
+            [train_targets[:i * num_val_samples],
+             train_targets[(i + 1) * num_val_samples:]],
+            axis=0)
+
+        # Kerasモデルを構築
+        model = build_model(train_data)
+
+        # モデルをサイレントモード(verbose=0)で適合
+        model.fit(partial_train_data, partial_train_targets,
+                  epochs=num_epochs, batch_size=1, verbose=0)
+
+        # モデルを検証データで評価
+        val_mse, val_mae = model.evaluate(val_data, val_targets, verbose=0)
+        all_scores.append(val_mae)
+
+    print(all_scores)
+
 
 if __name__ == '__main__':
     # データの読み込み
@@ -34,6 +73,5 @@ if __name__ == '__main__':
 
     train_data, test_data = standardize_data(train_data, test_data)
 
-    model = build_model(train_data)
-    print(model.summary())
+    k_fold_cross_validation(train_data, train_targets)
 
