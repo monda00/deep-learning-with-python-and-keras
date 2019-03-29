@@ -7,6 +7,7 @@ from keras import models
 from keras import layers
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 def standardize_data(train_data, test_data):
     mean = train_data.mean(axis=0)
@@ -30,8 +31,9 @@ def build_model(train_data):
 
 def k_fold_cross_validation(train_data, trian_targets, k=4):
     num_val_samples = len(train_data) // k
-    num_epochs = 100
-    all_scores = []
+    num_epochs = 500
+    # all_scores = []
+    all_mae_histories = []
 
     for i in range(k):
         print('processing fold #', i)
@@ -56,14 +58,36 @@ def k_fold_cross_validation(train_data, trian_targets, k=4):
         model = build_model(train_data)
 
         # モデルをサイレントモード(verbose=0)で適合
-        model.fit(partial_train_data, partial_train_targets,
-                  epochs=num_epochs, batch_size=1, verbose=0)
+        history = model.fit(partial_train_data, partial_train_targets,
+                            validation_data=(val_data, val_targets),
+                            epochs=num_epochs, batch_size=1, verbose=0)
 
         # モデルを検証データで評価
-        val_mse, val_mae = model.evaluate(val_data, val_targets, verbose=0)
-        all_scores.append(val_mae)
+        # val_mse, val_mae = model.evaluate(val_data, val_targets, verbose=0)
+        # all_scores.append(val_mae)
+        mae_history = history.history['val_mean_absolute_error']
+        all_mae_histories.append(mae_history)
 
-    print(all_scores)
+    average_mae_history = [
+        np.mean([x[i] for x in all_mae_histories]) for i in range(num_epochs)]
+
+    return average_mae_history
+
+def show_scores_by_k_fold(average_mae_history):
+    plt.plot(range(1, len(average_mae_history) + 1), average_mae_history)
+    plt.xlabel('Epochs')
+    plt.ylabel('Validation MAE')
+    plt.show()
+
+def smooth_curve(points, factor=0.9):
+    smoothed_points = []
+    for point in points:
+        if smoothed_points:
+            previous = smoothed_points[-1]
+            smoothed_points.append(previous * factor + point * (1 - factor))
+        else:
+            smoothed_points.append(point)
+    return smoothed_points
 
 
 if __name__ == '__main__':
@@ -73,5 +97,7 @@ if __name__ == '__main__':
 
     train_data, test_data = standardize_data(train_data, test_data)
 
-    k_fold_cross_validation(train_data, train_targets)
+    average_mae_history = k_fold_cross_validation(train_data, train_targets)
+
+    show_scores_by_k_fold(smooth_curve(average_mae_history[10:]))
 
