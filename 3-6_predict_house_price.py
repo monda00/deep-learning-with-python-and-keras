@@ -31,7 +31,7 @@ def build_model(train_data):
 
 def k_fold_cross_validation(train_data, trian_targets, k=4):
     num_val_samples = len(train_data) // k
-    num_epochs = 500
+    num_epochs = 80
     # all_scores = []
     all_mae_histories = []
 
@@ -60,7 +60,7 @@ def k_fold_cross_validation(train_data, trian_targets, k=4):
         # モデルをサイレントモード(verbose=0)で適合
         history = model.fit(partial_train_data, partial_train_targets,
                             validation_data=(val_data, val_targets),
-                            epochs=num_epochs, batch_size=1, verbose=0)
+                            epochs=num_epochs, batch_size=16, verbose=0)
 
         # モデルを検証データで評価
         # val_mse, val_mae = model.evaluate(val_data, val_targets, verbose=0)
