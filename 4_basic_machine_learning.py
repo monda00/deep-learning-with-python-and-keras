@@ -29,7 +29,7 @@ def show_loss_history(history):
     plt.xlabel('Epochs')
     plt.ylabel('Loss')
     plt.legend()
-    plt.show()
+    plt.savefig("fig/original_model.png")
 
 def build_original_model():
     model = models.Sequential()
