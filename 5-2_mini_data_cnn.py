@@ -3,9 +3,11 @@
 '''
 
 import os, shutil
+import matplotlib.pyplot as plt
 from keras import layers
 from keras import models
 from keras import optimizers
+from keras.preprocessing.image import ImageDataGenerator
 
 def make_dataset():
     # 元のデータセットを展開したディレクトリへのパス
@@ -47,51 +49,53 @@ def make_dataset():
     # os.mkdir(test_dogs_dir)
 
     # 最初の1000個の猫画像をtrain_cats_dirにコピー
-    fnames = ['cat.{}.jpg'.format(i) for i in range(1000)]
-    for fname in fnames:
-        src = os.path.join(original_dataset_dir, fname)
-        dst = os.path.join(train_cats_dir, fname)
-        shutil.copyfile(src, dst)
+    # fnames = ['cat.{}.jpg'.format(i) for i in range(1000)]
+    # for fname in fnames:
+    #     src = os.path.join(original_dataset_dir, fname)
+    #     dst = os.path.join(train_cats_dir, fname)
+    #     shutil.copyfile(src, dst)
 
     # 次の500個の猫画像をvalidation_cats_dirにコピー
-    fnames = ['cat.{}.jpg'.format(i) for i in range(1000, 1500)]
-    for fname in fnames:
-        src = os.path.join(original_dataset_dir, fname)
-        dst = os.path.join(validation_cats_dir, fname)
-        shutil.copyfile(src, dst)
+    # fnames = ['cat.{}.jpg'.format(i) for i in range(1000, 1500)]
+    # for fname in fnames:
+    #     src = os.path.join(original_dataset_dir, fname)
+    #     dst = os.path.join(validation_cats_dir, fname)
+    #     shutil.copyfile(src, dst)
 
     # 次の500個の猫画像をtest_cats_dirにコピー
-    fnames = ['cat.{}.jpg'.format(i) for i in range(1500, 2000)]
-    for fname in fnames:
-        src = os.path.join(original_dataset_dir, fname)
-        dst = os.path.join(test_cats_dir, fname)
-        shutil.copyfile(src, dst)
+    # fnames = ['cat.{}.jpg'.format(i) for i in range(1500, 2000)]
+    # for fname in fnames:
+    #     src = os.path.join(original_dataset_dir, fname)
+    #     dst = os.path.join(test_cats_dir, fname)
+    #     shutil.copyfile(src, dst)
 
     # 最初の500個の犬画像をtrain_dogs_dirにコピー
-    fnames = ['dog.{}.jpg'.format(i) for i in range(1000)]
-    for fname in fnames:
-        src = os.path.join(original_dataset_dir, fname)
-        dst = os.path.join(train_dogs_dir, fname)
-        shutil.copyfile(src, dst)
+    # fnames = ['dog.{}.jpg'.format(i) for i in range(1000)]
+    # for fname in fnames:
+    #     src = os.path.join(original_dataset_dir, fname)
+    #     dst = os.path.join(train_dogs_dir, fname)
+    #     shutil.copyfile(src, dst)
 
     # 次の500個の犬画像をvalidation_dogs_dirにコピー
-    fnames = ['dog.{}.jpg'.format(i) for i in range(1000, 1500)]
-    for fname in fnames:
-        src = os.path.join(original_dataset_dir, fname)
-        dst = os.path.join(validation_dogs_dir, fname)
-        shutil.copyfile(src, dst)
+    # fnames = ['dog.{}.jpg'.format(i) for i in range(1000, 1500)]
+    # for fname in fnames:
+    #     src = os.path.join(original_dataset_dir, fname)
+    #     dst = os.path.join(validation_dogs_dir, fname)
+    #     shutil.copyfile(src, dst)
 
     # 次の500個の犬画像をtest_dogs_dirにコピー
-    fnames = ['dog.{}.jpg'.format(i) for i in range(1500, 2000)]
-    for fname in fnames:
-        src = os.path.join(original_dataset_dir, fname)
-        dst = os.path.join(test_dogs_dir, fname)
-        shutil.copyfile(src, dst)
+    # fnames = ['dog.{}.jpg'.format(i) for i in range(1500, 2000)]
+    # for fname in fnames:
+    #     src = os.path.join(original_dataset_dir, fname)
+    #     dst = os.path.join(test_dogs_dir, fname)
+    #     shutil.copyfile(src, dst)
+
+    return train_dir, validation_dir
 
 def build_cnn_model():
     model = models.Sequential()
     model.add(layers.Conv2D(32, (3, 3), activation='relu',
-                            input_shape=(150, 150, 1)))
+                            input_shape=(150, 150, 3)))
     model.add(layers.MaxPooling2D((2, 2)))
     model.add(layers.Conv2D(64, (3, 3), activation='relu'))
     model.add(layers.MaxPooling2D((2, 2)))
@@ -109,10 +113,66 @@ def build_cnn_model():
 
     return model
 
+def make_generator(train_dir, validation_dir):
+    # 全ての画像を1/255でスケーリング
+    train_datagen = ImageDataGenerator(rescale=1./255)
+    test_datagen = ImageDataGenerator(rescale=1./255)
+
+    train_generator = train_datagen.flow_from_directory(
+        train_dir,
+        target_size=(150, 150),
+        batch_size=20,
+        class_mode='binary')
+
+    validation_generator = test_datagen.flow_from_directory(
+        validation_dir,
+        target_size=(150, 150),
+        batch_size=20,
+        class_mode='binary')
+
+    return train_generator, validation_generator
+
+def show_loss_and_acc(history):
+    acc = history.history['acc']
+    val_acc = history.history['val_acc']
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs = range(1, len(acc) + 1)
+
+    # 正解率をプロット
+    plt.plot(epochs, acc, 'bo', label='Training acc')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.legend()
+
+    plt.savefig('./fig/acc.png')
+
+    # 損失値をプロット
+    plt.plot(epochs, loss, 'bo', label='Training loss')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.legend()
+
+    plt.savefig('./fig/loss.png')
+
 
 if __name__ == '__main__':
-    # make_dataset()
+    train_dir, validation_dir = make_dataset()
 
     model = build_cnn_model()
     model.summary()
+
+    train_generator, validation_generator =\
+        make_generator(train_dir, validation_dir)
+
+    history = model.fit_generator(train_generator,
+                                  steps_per_epoch=100,
+                                  epochs=30,
+                                  validation_data=validation_generator,
+                                  validation_steps=50)
+
+    model.save('cats_and_dogs_small_1.h5')
+
+    show_loss_and_acc(history)
 
