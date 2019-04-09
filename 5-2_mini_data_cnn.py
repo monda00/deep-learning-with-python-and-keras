@@ -114,6 +114,28 @@ def build_cnn_model():
 
     return model
 
+def build_cnn_dropout_model():
+    model = models.Sequential()
+    model.add(layers.Conv2D(32, (3, 3), activation='relu',
+                            input_shape=(150, 150, 3)))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Conv2D(128, (3, 3), activation='relu'))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Conv2D(128, (3, 3), activation='relu'))
+    model.add(layers.MaxPooling2D((2, 2)))
+    model.add(layers.Flatten())
+    model.add(layers.Dropout(0.5))
+    model.add(layers.Dense(512, activation='relu'))
+    model.add(layers.Dense(1, activation='sigmoid'))
+
+    model.compile(optimizer=optimizers.RMSprop(lr=1e-4),
+                  loss='binary_crossentropy',
+                  metrics=['acc'])
+
+    return model
+
 def make_generator(train_dir, validation_dir):
     # 全ての画像を1/255でスケーリング
     train_datagen = ImageDataGenerator(rescale=1./255)
@@ -132,6 +154,34 @@ def make_generator(train_dir, validation_dir):
         class_mode='binary')
 
     return train_generator, validation_generator
+
+def make_extended_data_generator(train_dir, validation_dir):
+    train_datagen = ImageDataGenerator(
+        rescale=1./255,
+        rotation_range=40,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,)
+
+    # 検証データは水増しするべきではないことに注意
+    test_datagen = ImageDataGenerator(rescale=1./255)
+
+    train_generator = train_datagen.flow_from_directory(
+        train_dir,
+        target_size=(150, 150),
+        batch_size=32,
+        class_mode='binary')
+
+    validation_generator = test_datagen.flow_from_directory(
+        validation_dir,
+        target_size=(150, 150),
+        batch_size=32,
+        class_mode='binary')
+
+    return train_generator, validation_generator
+
 
 def show_loss_and_acc(history):
     acc = history.history['acc']
@@ -200,19 +250,19 @@ def show_extended_data(datagen, train_cats_dir):
 if __name__ == '__main__':
     train_dir, validation_dir, train_cats_dir = make_dataset()
 
-    model = build_cnn_model()
+    model = build_cnn_dropout_model()
     model.summary()
 
     train_generator, validation_generator =\
-        make_generator(train_dir, validation_dir)
+        make_extended_data_generator(train_dir, validation_dir)
 
     history = model.fit_generator(train_generator,
                                   steps_per_epoch=100,
-                                  epochs=30,
+                                  epochs=100,
                                   validation_data=validation_generator,
                                   validation_steps=50)
 
-    model.save('cats_and_dogs_small_1.h5')
+    model.save('cats_and_dogs_small_2.h5')
 
     show_loss_and_acc(history)
 
