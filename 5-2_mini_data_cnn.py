@@ -9,6 +9,7 @@ from keras import models
 from keras import optimizers
 from keras.preprocessing.image import ImageDataGenerator
 from keras.preprocessing import image
+from keras.applications import VGG16
 
 def make_dataset():
     # 元のデータセットを展開したディレクトリへのパス
@@ -246,8 +247,7 @@ def show_extended_data(datagen, train_cats_dir):
 
     plt.show()
 
-
-if __name__ == '__main__':
+def training_model_from_scratch():
     train_dir, validation_dir, train_cats_dir = make_dataset()
 
     model = build_cnn_dropout_model()
@@ -265,4 +265,14 @@ if __name__ == '__main__':
     model.save('cats_and_dogs_small_2.h5')
 
     show_loss_and_acc(history)
+
+def training_model_from_trained_model():
+    conv_base = VGG16(weights='imagenet',
+                      include_top=False,
+                      input_shape=(150, 150, 3))
+    conv_base.summary()
+
+
+if __name__ == '__main__':
+    training_model_from_trained_model()
 
