@@ -300,6 +300,30 @@ def build_dense_model():
 
     return model
 
+def show_loss_and_acc_trained(history):
+    acc = history.history['acc']
+    val_acc = history.history['val_acc']
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs = range(len(acc))
+
+    # 正解率をプロット
+    plt.plot(epochs, acc, 'bo', label='Training acc')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc')
+    plt.title('Training and validation accuracy')
+    plt.legend()
+    plt.savefig('./fig/acc_trained.png')
+
+    plt.figure()
+
+    # 損失値をプロット
+    plt.plot(epochs, loss, 'bo', label='Training loss')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss')
+    plt.title('Training and validation loss')
+    plt.legend()
+    plt.savefig('./fig/loss_trained.png')
+
 def training_model_from_trained_model():
     base_dir = './data/cats_and_dogs_small'
 
@@ -318,10 +342,11 @@ def training_model_from_trained_model():
     train_features, train_labels = extract_features(train_dir, 2000, batch_size,
                                                     conv_base, datagen)
     validation_features, validation_labels = extract_features(validation_dir,
-                                                              1000, conv_base,
+                                                              1000, batch_size,
+                                                              conv_base,
                                                               datagen)
-    test_features, test_labels = extract_features(test_dir, 1000, conv_base,
-                                                  datagen)
+    test_features, test_labels = extract_features(test_dir, 1000, batch_size,
+                                                  conv_base, datagen)
 
     train_features = np.reshape(train_features, (2000, 4 * 4 * 512))
     validation_features = np.reshape(validation_features, (1000, 4 * 4 * 512))
