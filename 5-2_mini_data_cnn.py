@@ -288,6 +288,18 @@ def extract_features(directory, sample_count, batch_size, conv_base, datagen):
 
     return features, labels
 
+def build_dense_model():
+    model = models.Sequential()
+    model.add(layers.Dense(256, activation='relu', input_dim=4 * 4 * 512))
+    model.add(layers.Dropout(0.5))
+    model.add(layers.Dense(1, activation='sigmoid'))
+
+    model.compile(optimizer=optimizers.RMSprop(lr=2e-5),
+                  loss='binary_crossentropy',
+                  metrics=['acc'])
+
+    return model
+
 def training_model_from_trained_model():
     base_dir = './data/cats_and_dogs_small'
 
@@ -314,6 +326,13 @@ def training_model_from_trained_model():
     train_features = np.reshape(train_features, (2000, 4 * 4 * 512))
     validation_features = np.reshape(validation_features, (1000, 4 * 4 * 512))
     test_features = np.reshape(test_features, (1000, 4 * 4 * 512))
+
+    model = build_dense_model()
+
+    history = model.fit(train_features, train_labels,
+                        epochs=30,
+                        batch_size=20,
+                        validation_data=(validation_features, validation_labels))
 
 
 if __name__ == '__main__':
