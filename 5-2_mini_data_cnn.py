@@ -410,7 +410,68 @@ def training_model_from_trained_model_with_extend_data():
                                   validation_steps=50,
                                   verbose=2)
 
+def training_model_fine_tuning():
+    conv_base = VGG16(weights='imagenet',
+                      include_top=False,
+                      input_shape=(150, 150, 3))
+
+    train_datagen = ImageDataGenerator(
+        rescale=1./255,
+        rotation_range=40,
+        width_shift_range=0.2,
+        height_shift_range=0.2,
+        shear_range=0.2,
+        zoom_range=0.2,
+        horizontal_flip=True,)
+
+    # 検証データは水増しするべきではないことに注意
+    test_datagen = ImageDataGenerator(rescale=1./255)
+
+    train_generator = train_datagen.flow_from_directory(
+        train_dir,
+        target_size=(150, 150),
+        batch_size=32,
+        class_mode='binary')
+
+    validation_generator = test_datagen.flow_from_directory(
+        validation_dir,
+        target_size=(150, 150),
+        batch_size=32,
+        class_mode='binary')
+
+    conv_base.trainable = True
+    set_trainable = False
+    for layer in conv_base.layers:
+        if layer.name == 'block5_conv1':
+            set_trainable = True
+        if set_trainable:
+            layer.trainable = True
+        else:
+            layer.trainable = False
+
+    model = conv_base
+
+    model.compile(loss='binary_crossentropy',
+                  optimizer=optimizers.RMSprop(lr=1e-5),
+                  metrics=['acc'])
+
+    history = model.fit_generator(train_generator,
+                                  steps_per_epoch=100,
+                                  epochs=100,
+                                  validation_data=validation_generator,
+                                  validation_steps=50)
+
+def smooth_curve(points, factor=0.8):
+    smoothed_points = []
+    for point in points:
+        if smoothed_points:
+            previous = smoothed_points[-1]
+            smoothed_points.append(previous * factor + point * (1 - factor))
+        else:
+            smoothed_points.append(point)
+    return smoothed_points
+
 
 if __name__ == '__main__':
-    training_model_from_trained_model()
+    training_model_fine_tuning()
 
