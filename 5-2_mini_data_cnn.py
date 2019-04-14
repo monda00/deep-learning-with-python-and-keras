@@ -485,9 +485,21 @@ def showing_middle_layer_output():
 
     img_tensor /= 255.
 
-    print(img_tensor.shape)
+    #print(img_tensor.shape)
 
-    plt.imshow(img_tensor[0])
+    #plt.imshow(img_tensor[0])
+    #plt.show()
+
+    # 出力側の８つの層から出力を抽出
+    layer_outputs = [layer.output for layer in model.layers[:8]]
+    # 特定の入力をもとに、これらの出力を返すモデルを作成
+    activation_model = models.Model(inputs=model.input, outputs=layer_outputs)
+
+    # ５つのNumPy配列（層の活性化ごとに１つ）のリストを返す
+    activations = activation_model.predict(img_tensor)
+
+    first_layer_activation = activations[0]
+    plt.matshow(first_layer_activation[0, :, :, 3], cmap='viridis')
     plt.show()
 
 
