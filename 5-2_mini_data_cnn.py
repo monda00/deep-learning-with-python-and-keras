@@ -11,6 +11,7 @@ from keras import optimizers
 from keras.preprocessing.image import ImageDataGenerator
 from keras.preprocessing import image
 from keras.applications import VGG16
+from keras.models import load_model
 
 def make_dataset():
     # 元のデータセットを展開したディレクトリへのパス
@@ -471,7 +472,25 @@ def smooth_curve(points, factor=0.8):
             smoothed_points.append(point)
     return smoothed_points
 
+def showing_middle_layer_output():
+    model = load_model('cats_and_dogs_small_2.h5')
+    model.summary()
+
+    img_path = \
+        './data/cats_and_dogs_small/test/cats/cat.1700.jpg'
+
+    img = image.load_img(img_path, target_size=(150, 150))
+    img_tensor = image.img_to_array(img)
+    img_tensor = np.expand_dims(img_tensor, axis=0)
+
+    img_tensor /= 255.
+
+    print(img_tensor.shape)
+
+    plt.imshow(img_tensor[0])
+    plt.show()
+
 
 if __name__ == '__main__':
-    training_model_fine_tuning()
+    showing_middle_layer_output()
 
