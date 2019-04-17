@@ -598,7 +598,7 @@ def generate_pattern(layer_name, filter_index, model, size=150):
     iterate = K.function([model.input], [loss, grads])
 
     # 最初はノイズが含まれたグレースケール画像を使用
-    input_img_data = np.random.random((1, 150, 150, 3)) * 20 + 128.
+    input_img_data = np.random.random((1, size, size, 3)) * 20 + 128.
 
     # 勾配上昇上昇法を40ステップ実行
     step = 1.
@@ -619,6 +619,37 @@ def showing_filter():
     plt.imshow(generate_pattern('block3_conv1', 0, model))
     plt.show()
 
+def showing_filter_all():
+    model = VGG16(weights='imagenet', include_top=False)
+
+    layers = ['block1_conv1', 'block2_conv1', 'block3_conv1', 'block4_conv1']
+    for layer_name in layers:
+        size = 64
+        margin = 5
+
+        # 結果を格納する空（黒）の画像
+        results = np.zeros((8 * size + 7 * margin, 8 * size + 7 * margin, 3))
+
+        for i in range(8): # resultsグリッドの行を順番に処理
+            for j in range(8): # resultsグリッドの列を順番に処理
+                # layer_nameのフィルタi + (j * 8)のパターンを生成
+                filter_img = generate_pattern(layer_name, i + (j * 8),
+                                              model, size=size)
+
+                # resultsグリッドの短形(i, j)に結果を配置
+                horizontal_start = i * size + i * margin
+                horizontal_end = horizontal_start + size
+                vertical_start = j * size + j * margin
+                vertical_end = vertical_start + size
+                results[horizontal_start: horizontal_end,
+                        vertical_start: vertical_end, :] = filter_img
+
+        # resultsグリッドを表示
+        plt.figure(figsize=(20, 20))
+        plt.imshow(results)
+        plt.show()
+
+
 if __name__ == '__main__':
-    showing_filter()
+    showing_filter_all()
 
