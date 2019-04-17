@@ -12,6 +12,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.preprocessing import image
 from keras.applications import VGG16
 from keras.models import load_model
+from keras import backend as K
 
 def make_dataset():
     # 元のデータセットを展開したディレクトリへのパス
@@ -567,7 +568,57 @@ def showing_middle_layer_output_all():
     # plt.savefig("./fig/activations.png")
     plt.show()
 
+def deprocess_image(x):
+    # テンソルを正規化：中心を0、標準偏差を0.1にする
+    x -= x.mean()
+    x /= (x.std() + 1e-5)
+    x *= 0.1
+
+    # [0, 1]にクリッピング
+    x += 0.5
+    x = np.clip(x, 0, 1)
+
+    # RGB配列に変換
+    x *= 255
+    x = np.clip(x, 0, 255).astype('uint8')
+    return x
+
+def generate_pattern(layer_name, filter_index, model, size=150):
+    # ターゲット層のn番目のフィルタの活性化を最大化する損失関数を構築
+    layer_output = model.get_layer(layer_name).output
+    loss = K.mean(layer_output[:, :, :, filter_index])
+
+    # この損失関数を使って入力画像の勾配を計算
+    grads = K.gradients(loss, model.input)[0]
+
+    # 正規化トリック：勾配を正則化
+    grads /= (K.sqrt(K.mean(K.square(grads))) + 1e-5)
+
+    # 入力画像に基づいて損失値と勾配値を返す関数
+    iterate = K.function([model.input], [loss, grads])
+
+    # 最初はノイズが含まれたグレースケール画像を使用
+    input_img_data = np.random.random((1, 150, 150, 3)) * 20 + 128.
+
+    # 勾配上昇上昇法を40ステップ実行
+    step = 1.
+    for i in range(40):
+        # 損失値と勾配値を計算
+        loss_value, grads_value = iterate([input_img_data])
+        # 損失が最大になる方向に入力画像を調節
+
+    img = input_img_data[0]
+    return deprocess_image(img)
+
+def showing_filter():
+    model = VGG16(weights='imagenet', include_top=False)
+
+    layer_name = 'block3_conv1'
+    filter_index = 0
+
+    plt.imshow(generate_pattern('block3_conv1', 0, model))
+    plt.show()
 
 if __name__ == '__main__':
-    showing_middle_layer_output_all()
+    showing_filter()
 
