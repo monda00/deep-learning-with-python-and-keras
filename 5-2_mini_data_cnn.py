@@ -13,6 +13,8 @@ from keras.preprocessing import image
 from keras.applications import VGG16
 from keras.models import load_model
 from keras import backend as K
+from keras.applications.vgg16 import preprocess_input, decode_predictions
+import cv2
 
 def make_dataset():
     # 元のデータセットを展開したディレクトリへのパス
@@ -648,6 +650,80 @@ def showing_filter_all():
         plt.figure(figsize=(20, 20))
         plt.imshow(results)
         plt.show()
+
+def showing_heatmap():
+    # 出力側に全結合分類器が含まれていることに注意
+    # ここまでのケースでは、この分類器を削除している
+    model = VGG16(weights='imagenet')
+
+    # ターゲット画像へのパス
+    img_path = './fig/creative_commons_elepahnt.jpg'
+
+    # ターゲット画像を読み込む：imgはサイズが224×224のPIL画像
+    img = image.load_img(img_path, target_size=(224, 224))
+
+    # Xは形状が(224, 224, 3)のfloa32型のNumPy配列
+    x = image.img_to_array(img)
+
+    # この配列をサイズが(1, 224, 224, 3)のバッチに変換するために次元を追加
+    x = np.expand_dims(x, axis=0)
+
+    # バッチの前処理（チャネルごとに色を正規化）
+    x = preprocess_input(x)
+
+    preds = model.predict(x)
+
+    # 予測ベクトルの「アフリカゾウ」エントリ
+    africal_elephant_output = model.output[:, 386]
+
+    # VGG16の最後の畳み込み層であるblock5_conv3の出力特徴マップ
+    last_conv_layer = model.get_layer('block5_conv3')
+
+    # block5_conv3の出力特徴マップでの「アフリカゾウ」クラスの勾配
+    grads = K.gradients(africal_elephant_output, last_conv_layer.output)[0]
+
+    # 形状が(512, )のベクトル
+    # 各エントリは特定の特徴マップチャネルの勾配の平均強度
+    pooled_grads = K.mean(grads, axis=(0, 1, 2))
+
+    # ２頭のアフリカゾウのサンプル画像に基づいて、pooled_gradsと
+    # block5_conv3の出力特徴マップの値にアクセスするための関数
+    iterate = K.function([model.input],
+                         [pooled_grads, last_conv_layer.output[0]])
+
+    # これら２つの値をNumPy配列として取得
+    pooled_grads_value, conv_layer_output_value = iterate([x])
+
+    # 「アフリカゾウ」クラスに関する「このチャネルの重要度」を
+    # 特徴マップ配列の各チャネルに掛ける
+    for i in range(512):
+        conv_layer_output_value[:, :, i] *= pooled_grads_value[i]
+
+    # 最終的な特徴マップのチャネルごとの平均値が
+    # クラスの活性化のヒートマップ
+    heatmap = np.mean(conv_layer_output_value, axis=-1)
+
+    heatmap = np.maximum(heatmap, 0)
+    heatmap /= np.max(heatmap)
+    plt.matshow(heatmap)
+
+    # cv2を使って元の画像を読み込む
+    img = cv2.imread(img_path)
+
+    # 元の画像と同じサイズになるようにヒートマップのサイズを変更
+    heatmap = cv2.resize(heatmap, (img.shape[1], img.shape[0]))
+
+    # ヒートマップをRGBに変換
+    heatmap = np.uint8(255 * heatmap)
+
+    # ヒートマップを元の画像に適用
+    heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+
+    # 0.4はヒートマップの強度係数
+    superimposed_img = heatmap * 0.4 + img
+
+    # 画像をディスクに保存
+    cv2.imwrite('./fig/elepahnt_cam.jpn', superimposed_img)
 
 
 if __name__ == '__main__':
