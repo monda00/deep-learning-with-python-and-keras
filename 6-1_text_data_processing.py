@@ -5,6 +5,11 @@
 import numpy as np
 import string
 from keras.preprocessing.text import Tokenizer
+from keras.layers import Embedding
+from keras.datasets import imdb
+from keras import preprocessing
+from keras.models import Sequential
+from keras.layers import Flatten, Dense, Embedding
 
 # 単語レベルでの単純なone-hotエンコーディング
 def simple_one_hot_encoding_by_word():
@@ -89,7 +94,51 @@ def simple_one_hot_encoding_by_hash():
             index = abs(hash(word)) % dimensionality
             results[i, j, index] = 1.
 
+# 埋め込み層を使った単語埋め込みの学習
+def word_embedding_by_embedding_layer():
+    # Embedding層の引数は少なくとも２つ：
+    #   有効なトークンの数：この場合は1000
+    #   埋め込みの次元数：この場合は64
+    embedding_layer = Embedding(1000, 64)
+
+    # 特徴量として考慮する単語の数
+    max_features = 10000
+
+    # max_features個の最も出現頻度の高い単語のうち、
+    # この数の単語を残してテキストをカット
+    max_len = 20
+
+    # データを複数の整数リストとして読み込む
+    (x_train, y_train), (x_test, y_test) = \
+        imdb.load_data(num_words=max_features)
+
+    # 整数のリストを形状が(samples, max_len)の２次元整数テンソルに変換
+    x_train = preprocessing.sequence.pad_sequences(x_train, maxlen=max_len)
+    x_test = preprocessing.sequence.pad_sequences(x_test, maxlen=max_len)
+
+    model = Sequential()
+
+    # 後から埋め込み入力を平坦化できるよう、
+    # Embedding層に入力の長さとしてmax_lenを指定
+    # Embedding層のあと、活性化の形状は(samples, max_len, 8)になる
+    model.add(Embedding(10000, 8, input_length=max_len))
+
+    # 埋め込みの３次元テンソルを形状が(samples, max_len * 8)の２次元テンソルに変換
+    model.add(Flatten())
+
+    # 最後に分類器を追加（分類器のみで学習しているだけ）
+    model.add(Dense(1, activation='sigmoid'))
+    model.compile(optimizer='rmsprop',
+                  loss='binary_crossentropy',
+                  metrics=['acc'])
+    model.summary()
+
+    history = model.fit(x_train, y_train,
+                        epochs=10,
+                        batch_size=32,
+                        validation_split=0.2)
+
 
 if __name__ == '__main__':
-    simple_one_hot_encoding_by_hash()
+    word_embedding_by_embedding_layer()
 
