@@ -3,6 +3,7 @@
 '''
 
 import numpy as np
+import os, shutil
 import string
 from keras.preprocessing.text import Tokenizer
 from keras.layers import Embedding
@@ -10,6 +11,8 @@ from keras.datasets import imdb
 from keras import preprocessing
 from keras.models import Sequential
 from keras.layers import Flatten, Dense, Embedding
+from keras.preprocessing.sequence import pad_sequences
+import matplotlib.pyplot as plt
 
 # 単語レベルでの単純なone-hotエンコーディング
 def simple_one_hot_encoding_by_word():
@@ -138,7 +141,153 @@ def word_embedding_by_embedding_layer():
                         batch_size=32,
                         validation_split=0.2)
 
+# IMDbデータセットの処理
+def preprocessing_imdb(max_len, training_samples, validation_samples, max_words):
+    # IMDbデータセットが置かれているディレクトリ
+    imdb_dir = './data/aclImdb'
+
+    train_dir = os.path.join(imdb_dir, 'train')
+    labels = []
+    texts = []
+
+    # 元のIMDbデータセットのラベルを処理
+    for label_type in ['neg', 'pos']:
+        dir_name = os.path.join(train_dir, label_type)
+        for fname in os.listdir(dir_name):
+            if fname[-4:] == '.txt':
+                f = open(os.path.join(dir_name, fname))
+                texts.append(f.read())
+                f.close()
+                if label_type == 'neg':
+                    labels.append(0)
+                else:
+                    labels.append(1)
+
+    tokenizer = Tokenizer(num_words=max_words)
+    tokenizer.fit_on_texts(texts)
+    sequences = tokenizer.texts_to_sequences(texts)
+
+    word_index = tokenizer.word_index
+    print('Found %s unique tokens.' % len(word_index))
+
+    data = pad_sequences(sequences, maxlen=max_len)
+
+    labels = np.asarray(labels)
+    print('Shape of data tensor:', data.shape)
+    print('Shape of label tensor:', labels.shape)
+
+    # データを訓練データセットと検証データセットに分割：
+    # ただし、サンプルが順番に並んでいる（否定的なレビューの後に肯定的なレビューが
+    # 配置されている）状態のデータを使用するため、最初にデータをシャッフル
+    indices = np.arange(data.shape[0])
+    np.random.shuffle(indices)
+    data = data[indices]
+    lebels = labels[indices]
+
+    x_train = data[:training_samples]
+    y_train = labels[:training_samples]
+    x_val = data[training_samples: training_samples + validation_samples]
+    y_val = labels[training_samples: training_samples + validation_samples]
+
+    return x_train, y_train, x_val, y_val, word_index
+
+def preprocessing_glove(max_words, embedding_dim, word_index):
+    # GloVeの単語埋め込みファイルを解析
+    # GloVeの埋め込みファイルが置かれているディレクトリ
+    glove_dir = './data/glove.6B'
+
+    embeddings_index = {}
+    f = open(os.path.join(glove_dir, 'glove.6B.100d.txt'))
+    for line in f:
+        values = line.split()
+        word = values[0]
+        coefs = np.asarray(values[1:], dtype='float32')
+        embeddings_index[word] = coefs
+    f.close()
+
+    print('Found %s word vectors.' % len(embeddings_index))
+
+    embedding_matrix = np.zeros((max_words, embedding_dim))
+    for word, i in word_index.items():
+        embedding_vector = embeddings_index.get(word)
+        if i < max_words:
+            if embedding_vector is not None:
+                # 埋め込みインデックスで見つからない単語は0で埋める
+                embedding_matrix[i] = embedding_vector
+
+    return embedding_matrix
+
+# モデル定義
+def build_model(max_words, embedding_dim, max_len, embedding_matrix):
+    model = Sequential()
+    model.add(Embedding(max_words, embedding_dim, input_length=max_len))
+    model.add(Flatten())
+    model.add(Dense(32, activation='relu'))
+    model.add(Dense(1, activation='sigmoid'))
+    model.summary()
+
+    # GloVeの埋め込みをモデルに読み込む
+    model.layers[0].set_weights([embedding_matrix])
+    model.layers[0].trainable = False
+
+    model.compile(optimizer='rmsprop',
+                  loss='binary_crossentropy',
+                  metrics=['acc'])
+
+    return model
+
+# 結果をプロット
+def show_result(history):
+    acc = history.history['acc']
+    val_acc = history.history['val_acc']
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs = range(1, len(acc) + 1)
+
+    # 正解率をプロット
+    plt.plot(epochs, acc, 'bo', label='Training acc')
+    plt.plot(epochs, val_acc, 'b', label='Validation acc')
+    plt.title('Training and Validation accuracy')
+    plt.legend()
+    plt.savefig('./fig/6-1_training_and_validation_accuracy.png')
+
+    plt.figure()
+
+    # 損失値をプロット
+    plt.plot(epochs, loss, 'bo', label='Training loss')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss')
+    plt.title('Training and Validation loss')
+    plt.legend()
+    plt.savefig('./fig/6-1_training_and_validation_loss.png')
+
+# テキストのトークン化から単語埋め込みまで
+def token_to_word_embedding():
+    # IMDbデータのテキストをトークン化
+    max_len = 100               # 映画レビューを100ワードでカット
+    training_samples = 200      # 200個のサンプルで訓練
+    validation_samples = 10000  # 10000個のサンプルで検証
+    max_words = 10000           # データセットの最初から10000ワードのみを考慮
+
+    x_train, y_train, x_val, y_val, word_index =\
+        preprocessing_imdb(max_len, training_samples, validation_samples, max_words)
+
+    embedding_dim = 100
+
+    embedding_matrix = preprocessing_glove(max_words, embedding_dim, word_index)
+
+    model = build_model(max_words, embedding_dim, max_len, embedding_matrix)
+
+    history = model.fit(x_train, y_train,
+                        epochs=10,
+                        batch_size=32,
+                        validation_data=(x_val, y_val))
+
+    model.save_weights('pre_trained_glove_model.h5')
+
+    show_result(history)
+
 
 if __name__ == '__main__':
-    word_embedding_by_embedding_layer()
+    token_to_word_embedding()
 
