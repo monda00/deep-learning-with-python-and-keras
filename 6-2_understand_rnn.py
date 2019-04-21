@@ -7,6 +7,7 @@ from keras.datasets import imdb
 from keras.preprocessing import sequence
 from keras.models import Sequential
 from keras.layers import Embedding, SimpleRNN, Dense
+from keras.layers import LSTM
 import matplotlib.pyplot as plt
 
 # 単純なRNNのNumPy実装
@@ -55,7 +56,7 @@ def show_result(history):
     plt.plot(epochs, val_acc, 'b', label='Validation acc')
     plt.title('Training and Validation accuracy')
     plt.legend()
-    plt.savefig('./fig/6-2_training_and_validation_accuracy.png')
+    plt.savefig('./fig/6-2_training_and_validation_accuracy_lstm.png')
 
     plt.figure()
 
@@ -64,13 +65,26 @@ def show_result(history):
     plt.plot(epochs, val_loss, 'b', label='Validation loss')
     plt.title('Training and Validation loss')
     plt.legend()
-    plt.savefig('./fig/6-2_training_and_validation_loss.png')
+    plt.savefig('./fig/6-2_training_and_validation_loss_lstm.png')
 
 # Embedding層とSimpleRNN層を使ったモデル
 def build_embedding_and_simplernn_model(max_features):
     model = Sequential()
     model.add(Embedding(max_features, 32))
     model.add(SimpleRNN(32))
+    model.add(Dense(1, activation='sigmoid'))
+
+    model.compile(optimizer='rmsprop',
+                  loss='binary_crossentropy',
+                  metrics=['acc'])
+
+    return model
+
+# LSTMを使ったモデル
+def build_lstm_model(max_features):
+    model = Sequential()
+    model.add(Embedding(max_features, 32))
+    model.add(LSTM(32))
     model.add(Dense(1, activation='sigmoid'))
 
     model.compile(optimizer='rmsprop',
@@ -103,9 +117,6 @@ def rnn_for_imdb():
     model = build_embedding_and_simplernn_model(max_features)
     model.summary()
 
-    model.compile(optimizer='rmsprop',
-                  loss='binary_crossentropy',
-                  metrics=['acc'])
     history = model.fit(input_train, y_train,
                         epochs=10, batch_size=128, validation_split=0.2)
 
