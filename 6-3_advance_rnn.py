@@ -128,6 +128,18 @@ def ready_data():
     # テストデータセット全体を調べるためにtest_genから抽出する時間刻みの数
     test_steps = (len(float_data) - 300001 - lookback) // batch_size
 
+    evaluate_naive_method(val_steps, val_gen)
+
+# 常識的なベースラインのMAEを計算
+def evaluate_naive_method(val_steps, val_gen):
+    batch_maes = []
+    for step in range(val_steps):
+        samples, targets = next(val_gen)
+        preds = samples[:, -1, 1]
+        mae = np.mean(np.abs(preds - targets))
+        batch_maes.append(mae)
+    print(np.mean(batch_maes))
+
 
 if __name__ == '__main__':
     ready_data()
