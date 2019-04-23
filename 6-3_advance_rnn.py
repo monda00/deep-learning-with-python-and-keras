@@ -134,7 +134,7 @@ def main():
 
     evaluate_naive_method(val_steps, val_gen)
 
-    simple_dense_model(train_gen, val_gen, test_gen, lookback, step, float_data,
+    gru_model(train_gen, val_gen, test_gen, lookback, step, float_data,
                        val_steps)
 
 # 常識的なベースラインのMAEを計算
@@ -180,7 +180,24 @@ def show_result(history):
     plt.plot(epochs, val_loss, 'b', label='Validation loss')
     plt.title('Training and Validation loss')
     plt.legend()
-    plt.savefig('./fig/6-2_training_and_validation_loss_simple.png')
+    plt.savefig('./fig/6-3_training_and_validation_loss_gru.png')
+
+# GRUベースのモデルの訓練と評価
+def gru_model(train_gen, val_gen, test_gen, lookback, step, float_data,
+              val_steps):
+
+    model = Sequential()
+    model.add(layers.GRU(32, input_shape=(None, float_data.shape[-1])))
+    model.add(layers.Dense(1))
+
+    model.compile(optimizer=RMSprop(), loss='mae')
+    history = model.fit_generator(train_gen,
+                                  steps_per_epoch=500,
+                                  epochs=20,
+                                  validation_data=val_gen,
+                                  validation_steps=val_steps)
+
+    show_result(history)
 
 
 if __name__ == '__main__':
