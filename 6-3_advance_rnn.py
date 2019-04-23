@@ -6,6 +6,10 @@ import os
 import numpy as np
 from matplotlib import pyplot as plt
 
+from keras.models import Sequential
+from keras import layers
+from keras.optimizers import RMSprop
+
 # 気象データセットのデータの調査
 def search_data():
     data_dir = '/Users/masa/Downloads/jena_climate'
@@ -64,8 +68,8 @@ def generator(data, lookback, delay, min_index, max_index,
             targets[j] = data[rows[j] + delay][1]
         yield samples, targets
 
-# データの準備
-def ready_data():
+# メイン
+def main():
     data_dir = '/Users/masa/Downloads/jena_climate'
     fname = os.path.join(data_dir, 'jena_climate_2009_2016.csv')
 
@@ -130,6 +134,9 @@ def ready_data():
 
     evaluate_naive_method(val_steps, val_gen)
 
+    simple_dense_model(train_gen, val_gen, test_gen, lookback, step, float_data,
+                       val_steps)
+
 # 常識的なベースラインのMAEを計算
 def evaluate_naive_method(val_steps, val_gen):
     batch_maes = []
@@ -140,7 +147,42 @@ def evaluate_naive_method(val_steps, val_gen):
         batch_maes.append(mae)
     print(np.mean(batch_maes))
 
+# 全結合モデルの訓練と評価
+def simple_dense_model(train_gen, val_gen, test_gen, lookback, step, float_data,
+                       val_steps):
+
+    model = Sequential()
+    model.add(layers.Flatten(input_shape=(lookback // step,
+                                          float_data.shape[-1])))
+    model.add(layers.Dense(32, activation='relu'))
+    model.add(layers.Dense(1))
+
+    model.compile(optimizer=RMSprop(), loss='mae')
+    history = model.fit_generator(train_gen,
+                                  steps_per_epoch=500,
+                                  epochs=20,
+                                  validation_data=val_gen,
+                                  validation_steps=val_steps)
+
+    show_result(history)
+
+# 結果をプロット
+def show_result(history):
+    loss = history.history['loss']
+    val_loss = history.history['val_loss']
+
+    epochs = range(len(loss))
+
+    plt.figure()
+
+    # 損失値をプロット
+    plt.plot(epochs, loss, 'bo', label='Training loss')
+    plt.plot(epochs, val_loss, 'b', label='Validation loss')
+    plt.title('Training and Validation loss')
+    plt.legend()
+    plt.savefig('./fig/6-2_training_and_validation_loss_simple.png')
+
 
 if __name__ == '__main__':
-    ready_data()
+    main()
 
