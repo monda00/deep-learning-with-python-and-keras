@@ -134,8 +134,8 @@ def main():
 
     evaluate_naive_method(val_steps, val_gen)
 
-    gru_model_with_dropout(train_gen, val_gen, test_gen, lookback, step, float_data,
-                           val_steps)
+    stack_gru_model_with_dropout(train_gen, val_gen, test_gen, lookback, step, float_data,
+                                 val_steps)
 
 # 常識的なベースラインのMAEを計算
 def evaluate_naive_method(val_steps, val_gen):
@@ -180,7 +180,7 @@ def show_result(history):
     plt.plot(epochs, val_loss, 'b', label='Validation loss')
     plt.title('Training and Validation loss')
     plt.legend()
-    plt.savefig('./fig/6-3_training_and_validation_loss_gru_dropout.png')
+    plt.savefig('./fig/6-3_training_and_validation_loss_stack_gru_dropout.png')
 
 # GRUベースのモデルの訓練と評価
 def gru_model(train_gen, val_gen, test_gen, lookback, step, float_data,
@@ -208,6 +208,29 @@ def gru_model_with_dropout(train_gen, val_gen, test_gen, lookback, step, float_d
                          dropout=0.2,
                          recurrent_dropout=0.2,
                          input_shape=(None, float_data.shape[-1])))
+    model.add(layers.Dense(1))
+
+    model.compile(optimizer=RMSprop(), loss='mae')
+    history = model.fit_generator(train_gen,
+                                  steps_per_epoch=500,
+                                  epochs=40,
+                                  validation_data=val_gen,
+                                  validation_steps=val_steps)
+
+    show_result(history)
+
+# ドロップアウトで正則化されたスタッキングGRUモデルでの訓練と評価
+def stack_gru_model_with_dropout(train_gen, val_gen, test_gen, lookback, step, float_data,
+                                 val_steps):
+    model = Sequential()
+    model.add(layers.GRU(32,
+                         dropout=0.1,
+                         recurrent_dropout=0.5,
+                         return_sequences=True,
+                         input_shape=(None, float_data.shape[-1])))
+    model.add(layers.GRU(64,
+                         dropout=0.1,
+                         recurrent_dropout=0.5))
     model.add(layers.Dense(1))
 
     model.compile(optimizer=RMSprop(), loss='mae')
