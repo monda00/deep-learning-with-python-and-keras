@@ -3,4 +3,5 @@ __pycache__
 *.jpg
 data/aclImdb/*
 data/glove.6B/*
+.DS_Store
 
